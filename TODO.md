@@ -2,7 +2,7 @@
 
 ## P0: 手元実機確認
 
-- `npm run dev` で Control Window と Avatar Window が開くことを確認する。
+- `pnpm run dev` で Control Window と Avatar Window が開くことを確認する。
 - PNG/JPG/JPEG を読み込み、口パッチ、目パッチ、画像位置を実画像に合わせて調整する。
 - macOS のマイク権限ダイアログ後に `マイクON` が動くことを確認する。
 - OBS Studio の Window Capture で `Kaosan Live Avatar` を選択し、Virtual Camera 経由でZoomに出ることを確認する。

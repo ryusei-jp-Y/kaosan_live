@@ -230,8 +230,8 @@ kaosan_live/
 ## 使い方
 
 ```sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 1. Control Window で `画像選択` を押す
@@ -245,12 +245,16 @@ npm run dev
 
 ## 開発
 
+### ツールチェーン
+
+- Node.js: 24.18.0
+- pnpm: 11.12.0
+
 ### 検証
 
 ```sh
-npm run typecheck
-npm run build
-npm audit
+pnpm run check
+pnpm audit --audit-level moderate
 ```
 
 ### 開発進捗

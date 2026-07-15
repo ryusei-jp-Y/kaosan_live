@@ -23,6 +23,8 @@ Kaosan Live は、1枚の線画イラストをマイク音声に合わせて動�
 - Electron
 - Vite
 - TypeScript
+- Node.js 24.18.0
+- pnpm 11.12.0
 - HTML Canvas
 - Web Audio API
 - JSON設定保存
@@ -31,8 +33,8 @@ Kaosan Live は、1枚の線画イラストをマイク音声に合わせて動�
 
 ```sh
 cd /Users/ymn/git/kaosan_live
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Control Window が起動します。Control Window から `Avatar Window起動` を押すと OBS でキャプチャする表示専用ウィンドウが開きます。
@@ -40,18 +42,14 @@ Control Window が起動します。Control Window から `Avatar Window起動` 
 ## 検証コマンド
 
 ```sh
-npm run typecheck
-npm run build
-npm audit
-node --check electron/main.cjs
-node --check electron/preload.cjs
+pnpm run check
+pnpm audit --audit-level moderate
 ```
 
 直近の確認結果:
 
-- `npm run typecheck`: 成功
-- `npm run build`: 成功
-- `npm audit`: 0 vulnerabilities
+- `pnpm run check`: 成功
+- `pnpm audit --audit-level moderate`: 0 vulnerabilities
 - Electron main/preload 構文チェック: 成功
 
 注意:
@@ -61,7 +59,7 @@ node --check electron/preload.cjs
 
 ## 主要ファイル
 
-- `package.json`: npm scripts と依存関係
+- `package.json`: pnpm scripts と依存関係
 - `electron/main.cjs`: Electron main process、ウィンドウ作成、設定保存、画像用カスタムプロトコル
 - `electron/preload.cjs`: Renderer に公開する安全な IPC API
 - `src/control.ts`: Control Window のUI、設定操作、マイク開始停止、手動プレビュー
@@ -174,7 +172,7 @@ Control Window と Avatar Window の状態同期は `BroadcastChannel("kaosan-li
 
 次回作業開始時に優先確認すること:
 
-- `npm run dev` で Control Window が開くか
+- `pnpm run dev` で Control Window が開くか
 - `Avatar Window起動` で表示専用ウィンドウが開くか
 - 画像選択後、プレビューとAvatar Windowの両方に画像が出るか
 - macOS のマイク権限ダイアログ後に `マイクON` が動くか
@@ -208,11 +206,10 @@ Control Window と Avatar Window の状態同期は `BroadcastChannel("kaosan-li
 
 ```sh
 cd /Users/ymn/git/kaosan_live
-npm install
-npm run typecheck
-npm run build
-npm audit
-npm run dev
+pnpm install
+pnpm run check
+pnpm audit --audit-level moderate
+pnpm run dev
 ```
 
 その後:
