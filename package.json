@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "electron": "^40.0.0"
+    "electron": "^40.10.6"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
