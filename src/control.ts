@@ -1,7 +1,7 @@
 import "./styles/control.css";
 import { AvatarRenderer } from "./avatarRenderer";
 import { publishLip, publishManualLip, publishSettings } from "./bus";
-import { defaultLipState, mergeSettings } from "./defaults";
+import { defaultLipState, mergeSettings, myModelDefaults } from "./defaults";
 import { LipSyncAudio } from "./audio";
 import type { LipState, Settings } from "./types";
 
@@ -48,122 +48,198 @@ function template() {
     <main class="shell">
       <section class="preview-panel">
         <div class="preview-topbar">
-          <div>
-            <h1>Kaosan Live</h1>
-            <p>Line-art avatar control</p>
-          </div>
+          <h1>Kaosan Live</h1>
+          <button class="icon-button" id="help-open" type="button" aria-label="ヘルプを開く" title="ヘルプ">?</button>
+        </div>
+        <div class="preview-stage">
+          <canvas id="preview-canvas"></canvas>
+        </div>
+        <div class="live-readout" aria-label="音声入力の状態">
           <div class="meter">
-            <span>RMS</span>
+            <span>入力</span>
             <div><i id="rms-bar"></i></div>
           </div>
+          ${readout("口の開き", "mouth-open")}
+          <span class="readout-pill" id="silent-state">Silent</span>
         </div>
-        <canvas id="preview-canvas"></canvas>
         <div class="status" id="status">Ready</div>
       </section>
-      <section class="controls">
-        ${section("Image", `
-          <button id="choose-image">画像選択</button>
-          <label>画像パス<input data-path="image.path" value="${escapeAttr(settings.image.path)}" readonly /></label>
-          ${range("表示X", "image.x", 0, settings.canvas.width, 1)}
-          ${range("表示Y", "image.y", 0, settings.canvas.height, 1)}
-          ${range("拡大率", "image.scale", 0.1, 3, 0.01)}
-          ${range("回転", "image.rotation", -15, 15, 0.1)}
-        `)}
-        ${section("Mouth", `
-          <div class="grid-2">
-            ${range("口X", "mouth.x", 0, settings.canvas.width, 1)}
-            ${range("口Y", "mouth.y", 0, settings.canvas.height, 1)}
-          </div>
-          <div class="grid-2">
-            ${range("口幅", "mouth.width", 20, 420, 1)}
-            ${range("口高さ", "mouth.height", 8, 220, 1)}
-          </div>
-          <div class="grid-2">
-            ${range("消し幅", "mouth.patchWidth", 20, 520, 1)}
-            ${range("消し高さ", "mouth.patchHeight", 10, 260, 1)}
-          </div>
-          <div class="grid-2">
-            ${color("線色", "mouth.strokeColor")}
-            ${color("消し色", "mouth.patchColor")}
-          </div>
-          ${range("線の太さ", "mouth.strokeWidth", 1, 28, 1)}
-        `)}
-        ${section("Lip Sync", `
-          <label>マイク<select id="device-select"></select></label>
-          <div class="button-row">
-            <button id="mic-on">マイクON</button>
-            <button id="mic-off">マイクOFF</button>
-          </div>
-          ${range("感度", "mouth.sensitivity", 0.2, 3, 0.01)}
-          ${range("ノイズゲート", "mouth.noiseGate", 0, 0.18, 0.005)}
-          ${range("最大開き", "mouth.maxOpen", 0.1, 1.4, 0.01)}
-          ${range("開く速度", "mouth.openSpeed", 0.05, 1, 0.01)}
-          ${range("閉じ速度", "mouth.closeSpeed", 0.03, 1, 0.01)}
-          ${range("なめらかさ", "mouth.smoothing", 0, 0.94, 0.01)}
-          <label class="check"><input id="manual-lip" type="checkbox" /> 手動プレビュー</label>
-          ${range("手動Open", "manual.open", 0, 1, 0.01, 0)}
-          ${range("手動Wide", "manual.wide", 0, 1, 0.01, 0.5)}
-          ${range("手動Round", "manual.round", 0, 1, 0.01, 0.1)}
-        `)}
-        ${section("Blink", `
-          ${checkbox("瞬き有効", "blink.enabled")}
-          ${range("最小間隔", "blink.minInterval", 1, 10, 0.1)}
-          ${range("最大間隔", "blink.maxInterval", 2, 14, 0.1)}
-          ${range("二連続確率", "blink.doubleBlinkChance", 0, 0.6, 0.01)}
-          ${range("瞬き速度", "blink.duration", 0.08, 0.5, 0.01)}
-          <div class="grid-2">
-            ${range("左目X", "eyes.leftX", 0, settings.canvas.width, 1)}
-            ${range("右目X", "eyes.rightX", 0, settings.canvas.width, 1)}
-          </div>
-          ${range("左目Y", "eyes.leftY", 0, settings.canvas.height, 1)}
-          ${range("右目Y", "eyes.rightY", 0, settings.canvas.height, 1)}
-          ${range("閉じ目幅", "eyes.width", 12, 180, 1)}
-          ${range("閉じ目太さ", "eyes.strokeWidth", 1, 24, 1)}
-        `)}
-        ${section("Motion", `
-          ${range("待機揺れ量", "motion.idleBobAmount", 0, 8, 0.1)}
-          ${range("待機揺れ速度", "motion.idleBobSpeed", 0.1, 2.5, 0.05)}
-          ${range("話し中バウンス", "motion.talkBounceAmount", 0, 10, 0.1)}
-          ${range("バウンス速度", "motion.talkBounceSpeed", 0.1, 4, 0.05)}
-          ${range("瞬き沈み", "motion.blinkDipAmount", 0, 5, 0.1)}
-          ${range("手描き揺らぎ", "motion.jitterAmount", 0, 1.2, 0.01)}
-        `)}
-        ${section("Output", `
-          <label>解像度<select id="resolution">
-            <option value="1280x720">1280x720</option>
-            <option value="1920x1080">1920x1080</option>
-          </select></label>
-          <label>FPS<select data-path="canvas.fps">
-            <option value="30">30</option>
-            <option value="60">60</option>
-          </select></label>
-          ${color("背景色", "canvas.backgroundColor")}
-          ${checkbox("常に最前面", "output.alwaysOnTop")}
-          ${checkbox("フルスクリーン", "output.fullscreen")}
-          ${checkbox("デバッグ表示", "output.debug")}
-          <div class="button-row">
-            <button id="open-avatar">Avatar Window起動</button>
-          </div>
-          <div class="button-row">
-            <button id="save">設定保存</button>
-            <button id="save-as">別名保存</button>
-            <button id="load">設定読み込み</button>
-          </div>
-        `)}
-        ${section("OBS", `
-          <ol>
-            <li>Avatar Windowを起動</li>
-            <li>OBSのウィンドウキャプチャで選択</li>
-            <li>OBS Virtual Cameraを開始</li>
-            <li>ZoomでOBS Virtual Cameraを選択</li>
-          </ol>
-        `)}
-      </section>
+      <aside class="controls">
+        <div class="control-tabs" role="tablist" aria-label="設定画面">
+          <button class="tab-button is-active" id="tab-basic" type="button" role="tab" aria-selected="true" data-panel="basic">基本</button>
+          <button class="tab-button" id="tab-advanced" type="button" role="tab" aria-selected="false" data-panel="advanced">詳細</button>
+        </div>
+
+        <div class="control-panel" id="panel-basic" role="tabpanel" aria-labelledby="tab-basic">
+          ${controlSection("ライブ", `
+            <button class="primary-button full-button" id="open-avatar" type="button">Avatarを表示</button>
+            <label>マイク<select id="device-select"></select></label>
+            <div class="button-row two-buttons">
+              <button id="mic-on" type="button">マイク開始</button>
+              <button id="mic-off" type="button">停止</button>
+            </div>
+          `)}
+          ${controlSection("背景", `
+            <div class="segmented-control" aria-label="背景の種類">
+              <button id="use-white-bg" type="button">白</button>
+              <button id="use-chroma" type="button">クロマキー</button>
+            </div>
+          `)}
+          ${controlSection("口の反応", `
+            ${range("感度", "mouth.sensitivity", 0.2, 3, 0.01)}
+            ${range("最大の開き", "mouth.maxOpen", 0.1, 1.4, 0.01)}
+            ${range("ノイズ除去", "mouth.noiseGate", 0, 0.18, 0.005)}
+          `)}
+          ${controlSection("口のテスト", `
+            <label class="check"><input id="manual-lip" type="checkbox" /> 手動プレビュー</label>
+            <div class="mouth-preset-row" role="group" aria-label="口形プリセット">
+              <button data-mouth-preset="closed" type="button">閉</button>
+              <button data-mouth-preset="a" type="button">A</button>
+              <button data-mouth-preset="i" type="button">I</button>
+              <button data-mouth-preset="u" type="button">U</button>
+              <button data-mouth-preset="e" type="button">E</button>
+              <button data-mouth-preset="o" type="button">O</button>
+            </div>
+          `)}
+        </div>
+
+        <div class="control-panel" id="panel-advanced" role="tabpanel" aria-labelledby="tab-advanced" hidden>
+          ${section("画像", `
+            <button class="full-button" id="choose-image" type="button">画像を選択</button>
+            ${range("表示X", "image.x", 0, settings.canvas.width, 1)}
+            ${range("表示Y", "image.y", 0, settings.canvas.height, 1)}
+            ${range("拡大率", "image.scale", 0.1, 3, 0.01)}
+            ${range("回転", "image.rotation", -15, 15, 0.1)}
+          `)}
+          ${section("口の形", `
+            <div class="grid-2">
+              ${range("口X", "mouth.x", 0, settings.canvas.width, 1)}
+              ${range("口Y", "mouth.y", 0, settings.canvas.height, 1)}
+            </div>
+            <div class="grid-2">
+              ${range("口幅", "mouth.width", 20, 420, 1)}
+              ${range("口高さ", "mouth.height", 8, 220, 1)}
+            </div>
+            <div class="grid-2">
+              ${range("消し幅", "mouth.patchWidth", 20, 520, 1)}
+              ${range("消し高さ", "mouth.patchHeight", 10, 260, 1)}
+            </div>
+            ${range("消し角丸", "mouth.patchRadius", 0, 60, 1)}
+            <div class="grid-2">
+              ${color("線色", "mouth.strokeColor")}
+              ${color("消し色", "mouth.patchColor")}
+            </div>
+            ${range("線の太さ", "mouth.strokeWidth", 1, 28, 1)}
+          `)}
+          ${section("口の動き", `
+            ${range("開く速度", "mouth.openSpeed", 0.05, 1, 0.01)}
+            ${range("閉じ速度", "mouth.closeSpeed", 0.03, 1, 0.01)}
+            ${range("なめらかさ", "mouth.smoothing", 0, 0.94, 0.01)}
+            ${range("手動Open", "manual.open", 0, 1, 0.01, 0)}
+            ${range("手動Wide", "manual.wide", 0, 1, 0.01, 0.5)}
+            ${range("手動Round", "manual.round", 0, 1, 0.01, 0.1)}
+          `)}
+          ${section("瞬き", `
+            ${checkbox("瞬き有効", "blink.enabled")}
+            ${range("最小間隔", "blink.minInterval", 1, 10, 0.1)}
+            ${range("最大間隔", "blink.maxInterval", 2, 14, 0.1)}
+            ${range("二連続確率", "blink.doubleBlinkChance", 0, 0.6, 0.01)}
+            ${range("瞬き速度", "blink.duration", 0.08, 0.5, 0.01)}
+            <div class="grid-2">
+              ${range("左目X", "eyes.leftX", 0, settings.canvas.width, 1)}
+              ${range("右目X", "eyes.rightX", 0, settings.canvas.width, 1)}
+            </div>
+            <div class="grid-2">
+              ${range("左目Y", "eyes.leftY", 0, settings.canvas.height, 1)}
+              ${range("右目Y", "eyes.rightY", 0, settings.canvas.height, 1)}
+            </div>
+            ${range("閉じ目幅", "eyes.width", 12, 180, 1)}
+            ${range("目消し角丸", "eyes.patchRadius", 0, 40, 1)}
+            ${range("閉じ目太さ", "eyes.strokeWidth", 1, 24, 1)}
+          `)}
+          ${section("モーション", `
+            ${range("待機揺れ量", "motion.idleBobAmount", 0, 8, 0.1)}
+            ${range("待機揺れ速度", "motion.idleBobSpeed", 0.1, 2.5, 0.05)}
+            ${range("話し中バウンス", "motion.talkBounceAmount", 0, 10, 0.1)}
+            ${range("バウンス速度", "motion.talkBounceSpeed", 0.1, 4, 0.05)}
+            ${range("瞬き沈み", "motion.blinkDipAmount", 0, 5, 0.1)}
+            ${range("手描き揺らぎ", "motion.jitterAmount", 0, 1.2, 0.01)}
+          `)}
+          ${section("出力", `
+            <label>解像度<select id="resolution">
+              <option value="1280x720">1280x720</option>
+              <option value="1920x1080">1920x1080</option>
+            </select></label>
+            <label>FPS<select data-path="canvas.fps">
+              <option value="30">30</option>
+              <option value="60">60</option>
+            </select></label>
+            ${color("背景色", "canvas.backgroundColor")}
+            ${checkbox("常に最前面", "output.alwaysOnTop")}
+            ${checkbox("フルスクリーン", "output.fullscreen")}
+            ${checkbox("デバッグ表示", "output.debug")}
+          `)}
+          ${section("設定", `
+            <button class="full-button" id="reset-my-model" type="button">初期状態に戻す</button>
+            <div class="button-row">
+              <button id="save" type="button">保存</button>
+              <button id="save-as" type="button">書き出す</button>
+              <button id="load" type="button">読み込む</button>
+            </div>
+          `)}
+        </div>
+      </aside>
     </main>
+
+    <dialog class="help-dialog" id="help-dialog" aria-labelledby="help-title">
+      <div class="help-modal">
+        <header class="help-header">
+          <h2 id="help-title">ヘルプ</h2>
+          <button class="icon-button" id="help-close" type="button" aria-label="ヘルプを閉じる" title="閉じる">×</button>
+        </header>
+        <div class="help-content">
+          <section>
+            <h3>はじめ方</h3>
+            <ol>
+              <li>マイクを選び、マイク開始を押します。</li>
+              <li>話してプレビューの口が動くことを確認します。</li>
+              <li>Avatarを表示を押します。</li>
+            </ol>
+          </section>
+          <section>
+            <h3>OBSとZoom</h3>
+            <ol>
+              <li>OBSのウィンドウキャプチャで Kaosan Live Avatar を選びます。</li>
+              <li>OBS Virtual Cameraを開始します。</li>
+              <li>ZoomのカメラでOBS Virtual Cameraを選びます。</li>
+            </ol>
+          </section>
+          <section>
+            <h3>口の調整</h3>
+            <p>声が小さく反応しない場合は感度を上げます。周囲の音で口が動く場合はノイズ除去を上げます。A・I・U・E・Oボタンで口形を確認できます。</p>
+          </section>
+          <section>
+            <h3>詳細設定</h3>
+            <p>画像位置、口や目の座標、瞬き、モーション、解像度は詳細タブから変更できます。変更内容は自動保存されます。</p>
+          </section>
+        </div>
+      </div>
+    </dialog>
   `;
 }
 
 function wireUi() {
+  document.querySelectorAll<HTMLButtonElement>("[data-panel]").forEach((button) => {
+    button.addEventListener("click", () => activatePanel(button.dataset.panel!));
+  });
+
+  const helpDialog = document.querySelector<HTMLDialogElement>("#help-dialog");
+  document.querySelector("#help-open")?.addEventListener("click", () => helpDialog?.showModal());
+  document.querySelector("#help-close")?.addEventListener("click", () => helpDialog?.close());
+  helpDialog?.addEventListener("click", (event) => {
+    if (event.target === helpDialog) helpDialog.close();
+  });
+
   document.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-path]").forEach((input) => {
     const path = input.dataset.path!;
     if (path.startsWith("manual.")) return;
@@ -190,6 +266,33 @@ function wireUi() {
     const pathInput = document.querySelector<HTMLInputElement>('[data-path="image.path"]');
     if (pathInput) pathInput.value = file;
     changed("画像を読み込みました");
+  });
+  document.querySelector("#reset-my-model")?.addEventListener("click", () => {
+    const output = { ...settings.output };
+    const deviceId = selectedDeviceId;
+    settings = mergeSettings({ ...myModelDefaults, output });
+    selectedDeviceId = deviceId;
+    publishSettings(settings);
+    app.innerHTML = template();
+    mountPreviewRenderer();
+    wireUi();
+    void refreshDevices();
+    void window.kaosan.saveSettings(settings);
+    setStatus("マイモデル初期値を反映しました");
+  });
+  document.querySelector("#use-chroma")?.addEventListener("click", () => {
+    settings.canvas.backgroundColor = "#00ff00";
+    settings.mouth.patchColor = "#ffffff";
+    changed("クロマキー背景にしました");
+    syncColorInput("canvas.backgroundColor");
+    syncColorInput("mouth.patchColor");
+  });
+  document.querySelector("#use-white-bg")?.addEventListener("click", () => {
+    settings.canvas.backgroundColor = "#ffffff";
+    settings.mouth.patchColor = "#ffffff";
+    changed("白背景にしました");
+    syncColorInput("canvas.backgroundColor");
+    syncColorInput("mouth.patchColor");
   });
   document.querySelector("#open-avatar")?.addEventListener("click", async () => {
     await window.kaosan.openAvatarWindow(settings);
@@ -241,6 +344,20 @@ function wireUi() {
   document.querySelectorAll<HTMLInputElement>('[data-path^="manual."]').forEach((input) => {
     input.addEventListener("input", publishManualState);
   });
+  document.querySelectorAll<HTMLButtonElement>("[data-mouth-preset]").forEach((button) => {
+    button.addEventListener("click", () => applyMouthPreset(button.dataset.mouthPreset!));
+  });
+}
+
+function activatePanel(name: string) {
+  document.querySelectorAll<HTMLButtonElement>("[data-panel]").forEach((button) => {
+    const active = button.dataset.panel === name;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll<HTMLElement>(".control-panel").forEach((panel) => {
+    panel.hidden = panel.id !== `panel-${name}`;
+  });
 }
 
 async function refreshDevices() {
@@ -273,7 +390,34 @@ function changed(message = "設定を反映しました") {
 function publishManualState() {
   const lip = currentManualLip();
   publishManualLip(manualLip, lip);
-  if (manualLip) renderer?.updateLip(lip);
+  renderMeters(lip, { updatePreview: true });
+}
+
+function applyMouthPreset(name: string) {
+  const values: Record<string, { open: number; wide: number; round: number }> = {
+    closed: { open: 0, wide: 0.48, round: 0.04 },
+    a: { open: 0.92, wide: 0.56, round: 0.22 },
+    i: { open: 0.26, wide: 0.9, round: 0.02 },
+    u: { open: 0.34, wide: 0.28, round: 0.8 },
+    e: { open: 0.5, wide: 0.82, round: 0.05 },
+    o: { open: 0.62, wide: 0.34, round: 0.95 }
+  };
+  const preset = values[name];
+  if (!preset) return;
+  const checkbox = document.querySelector<HTMLInputElement>("#manual-lip");
+  if (checkbox) checkbox.checked = true;
+  manualLip = true;
+  setManualInput("manual.open", preset.open);
+  setManualInput("manual.wide", preset.wide);
+  setManualInput("manual.round", preset.round);
+  publishManualState();
+}
+
+function setManualInput(path: string, value: number) {
+  const input = document.querySelector<HTMLInputElement>(`[data-path="${path}"]`);
+  const output = document.querySelector(`[data-value-for="${path}"]`);
+  if (input) input.value = String(value);
+  if (output) output.textContent = String(value);
 }
 
 function currentManualLip(): LipState {
@@ -284,18 +428,42 @@ function currentManualLip(): LipState {
     mouthWide: Number((document.querySelector('[data-path="manual.wide"]') as HTMLInputElement)?.value || 0.5),
     mouthRound: Number((document.querySelector('[data-path="manual.round"]') as HTMLInputElement)?.value || 0.1),
     talkIntensity: mouthOpen,
-    silent: mouthOpen < settings.mouth.noiseGate
+    peak: mouthOpen,
+    rms: mouthOpen,
+    silent: mouthOpen <= 0.001
   };
 }
 
-function renderMeters(lip: LipState) {
+function renderMeters(lip: LipState, options: { updatePreview?: boolean } = {}) {
   const bar = document.querySelector<HTMLElement>("#rms-bar");
   if (bar) bar.style.width = `${Math.min(100, lip.rms * 700)}%`;
-  if (!manualLip) renderer?.updateLip(lip);
+  setReadoutValue("rms", lip.rms);
+  setReadoutValue("peak", lip.peak);
+  setReadoutValue("mouth-open", lip.mouthOpen);
+  setReadoutValue("talk-intensity", lip.talkIntensity);
+  const silentState = document.querySelector<HTMLElement>("#silent-state");
+  if (silentState) {
+    silentState.textContent = lip.silent ? "Silent" : "Speaking";
+    silentState.dataset.active = String(!lip.silent);
+  }
+  if (options.updatePreview || !manualLip) renderer?.updateLip(lip);
+}
+
+function setReadoutValue(id: string, value: number) {
+  const output = document.querySelector<HTMLElement>(`#readout-${id}`);
+  if (output) output.textContent = value.toFixed(3);
 }
 
 function section(title: string, body: string) {
-  return `<details open><summary>${title}</summary><div class="section-body">${body}</div></details>`;
+  return `<details><summary>${title}</summary><div class="section-body">${body}</div></details>`;
+}
+
+function controlSection(title: string, body: string) {
+  return `<section class="control-section"><h2>${title}</h2><div class="section-body">${body}</div></section>`;
+}
+
+function readout(label: string, id: string) {
+  return `<span class="readout-item"><b>${label}</b><output id="readout-${id}">0.000</output></span>`;
 }
 
 function range(label: string, path: string, min: number, max: number, step: number, fallback?: number) {
@@ -340,6 +508,11 @@ function coerceValue(input: HTMLInputElement | HTMLSelectElement) {
 function setStatus(message: string) {
   const status = document.querySelector("#status");
   if (status) status.textContent = `${new Date().toLocaleTimeString()}  ${message}`;
+}
+
+function syncColorInput(path: string) {
+  const input = document.querySelector<HTMLInputElement>(`[data-path="${path}"]`);
+  if (input) input.value = String(getValue(path));
 }
 
 function escapeAttr(value: string) {

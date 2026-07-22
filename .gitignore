@@ -1,7 +1,56 @@
+# Dependencies and package-manager state
 node_modules/
-dist/
+.pnpm-store/
 package-lock.json
-.DS_Store
+
+# Build and packaged application output
+dist/
+out/
+release/
+*.dmg
+*.pkg
+*.AppImage
+*.blockmap
+
+# Local environment and app settings
+.env
+.env.*
+!.env.example
+.envrc
+.direnv/
+.npmrc
+*.local
+*.local.json
+kaosan-live-settings.json
+kaosan-live-settings.*.json
+
+# Local development notes and private assets
+DEVELOPMENT_PROGRESS.md
+local-assets/
+private-assets/
+
+# Logs and test output
+*.log
+logs/
+coverage/
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Editor and OS metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Signing credentials and provisioning files
+*.key
+*.pem
+*.p12
+*.pfx
+*.mobileprovision

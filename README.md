@@ -223,8 +223,7 @@ kaosan_live/
 ├── control.html
 ├── avatar.html
 ├── README.md
-├── TODO.md
-└── DEVELOPMENT_PROGRESS.md
+└── TODO.md
 ```
 
 ## 使い方
@@ -258,8 +257,6 @@ pnpm audit --audit-level moderate
 ```
 
 ### 開発進捗
-
-開発状況、設計判断、検証結果、次の作業は `DEVELOPMENT_PROGRESS.md` に集約しています。
 
 次にやることは `TODO.md` に整理しています。
 

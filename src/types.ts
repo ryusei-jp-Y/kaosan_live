@@ -11,6 +11,7 @@ export type Settings = {
     strokeWidth: number;
     patchWidth: number;
     patchHeight: number;
+    patchRadius: number;
     patchColor: string;
     sensitivity: number;
     noiseGate: number;
@@ -28,6 +29,7 @@ export type Settings = {
     rightY: number;
     width: number;
     patchHeight: number;
+    patchRadius: number;
     strokeColor: string;
     strokeWidth: number;
   };

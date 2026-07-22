@@ -39,6 +39,7 @@ export class AvatarRenderer {
   private fps = 0;
   private raf = 0;
   private running = false;
+  private resizeObserver?: ResizeObserver;
 
   constructor(options: RendererOptions) {
     this.canvas = options.canvas;
@@ -50,6 +51,10 @@ export class AvatarRenderer {
     this.resizeCanvas();
     this.loadImage();
     this.scheduleBlink(performance.now() / 1000);
+    if (this.preview && this.canvas.parentElement) {
+      this.resizeObserver = new ResizeObserver(() => this.resizeCanvas());
+      this.resizeObserver.observe(this.canvas.parentElement);
+    }
   }
 
   start() {
@@ -62,6 +67,7 @@ export class AvatarRenderer {
   stop() {
     this.running = false;
     cancelAnimationFrame(this.raf);
+    this.resizeObserver?.disconnect();
   }
 
   updateSettings(settings: Settings) {
@@ -77,7 +83,9 @@ export class AvatarRenderer {
 
   private resizeCanvas() {
     const width = this.preview ? this.canvas.clientWidth : this.settings.canvas.width;
-    const height = this.preview ? this.canvas.clientHeight : this.settings.canvas.height;
+    const height = this.preview
+      ? width * (this.settings.canvas.height / this.settings.canvas.width)
+      : this.settings.canvas.height;
     const ratio = window.devicePixelRatio || 1;
     this.canvas.width = Math.max(1, Math.floor(width * ratio));
     this.canvas.height = Math.max(1, Math.floor(height * ratio));
@@ -197,7 +205,7 @@ export class AvatarRenderer {
     this.drawMouth(now);
     ctx.restore();
 
-    if (this.settings.output.debug || this.preview) this.drawDebug(width, height);
+    if (this.settings.output.debug) this.drawDebug(width, height);
   }
 
   private motionY(now: number) {
@@ -246,7 +254,7 @@ export class AvatarRenderer {
 
     ctx.save();
     ctx.fillStyle = m.patchColor;
-    roundedRect(ctx, m.x - m.patchWidth / 2, m.y - m.patchHeight / 2, m.patchWidth, m.patchHeight, 12);
+    roundedRect(ctx, m.x - m.patchWidth / 2, m.y - m.patchHeight / 2, m.patchWidth, m.patchHeight, m.patchRadius);
     ctx.fill();
 
     ctx.lineCap = "round";
@@ -254,23 +262,37 @@ export class AvatarRenderer {
     ctx.strokeStyle = m.strokeColor;
     ctx.lineWidth = m.strokeWidth;
     ctx.beginPath();
-    ctx.moveTo(leftX + jitter(1), m.y + cornerLift + jitter(2));
-    ctx.bezierCurveTo(
-      leftX + cp + jitter(3),
-      topY + jitter(4),
-      rightX - cp + jitter(5),
-      topY + jitter(6),
-      rightX + jitter(7),
-      m.y + cornerLift + jitter(8)
-    );
-    ctx.bezierCurveTo(
-      rightX - cp + jitter(9),
-      bottomY + jitter(10),
-      leftX + cp + jitter(11),
-      bottomY + jitter(12),
-      leftX + jitter(13),
-      m.y + cornerLift + jitter(14)
-    );
+    if (this.current.open < 0.1) {
+      const endY = m.y - m.height * 0.27;
+      const smileY = m.y + m.height * 0.58;
+      ctx.moveTo(leftX + jitter(1), endY + jitter(2));
+      ctx.bezierCurveTo(
+        leftX + cp + jitter(3),
+        smileY + jitter(4),
+        rightX - cp + jitter(5),
+        smileY + jitter(6),
+        rightX + jitter(7),
+        endY + jitter(8)
+      );
+    } else {
+      ctx.moveTo(leftX + jitter(1), m.y + cornerLift + jitter(2));
+      ctx.bezierCurveTo(
+        leftX + cp + jitter(3),
+        topY + jitter(4),
+        rightX - cp + jitter(5),
+        topY + jitter(6),
+        rightX + jitter(7),
+        m.y + cornerLift + jitter(8)
+      );
+      ctx.bezierCurveTo(
+        rightX - cp + jitter(9),
+        bottomY + jitter(10),
+        leftX + cp + jitter(11),
+        bottomY + jitter(12),
+        leftX + jitter(13),
+        m.y + cornerLift + jitter(14)
+      );
+    }
     ctx.stroke();
 
     if (this.current.open > 0.18) {
@@ -284,24 +306,26 @@ export class AvatarRenderer {
   }
 
   private drawBlink() {
-    if (this.blinkValue <= 0.02) return;
+    if (this.blinkValue <= 0.12) return;
     const e = this.settings.eyes;
     const ctx = this.ctx;
+    const alpha = clamp((this.blinkValue - 0.12) / 0.55, 0, 1);
     for (const eye of [
       { x: e.leftX, y: e.leftY },
       { x: e.rightX, y: e.rightY }
     ]) {
       ctx.save();
+      ctx.globalAlpha = alpha;
       ctx.fillStyle = this.settings.mouth.patchColor;
-      roundedRect(ctx, eye.x - e.width / 2, eye.y - e.patchHeight / 2, e.width, e.patchHeight, 8);
+      roundedRect(ctx, eye.x - e.width / 2, eye.y - e.patchHeight / 2, e.width, e.patchHeight, e.patchRadius);
       ctx.fill();
       ctx.strokeStyle = e.strokeColor;
       ctx.lineWidth = e.strokeWidth;
       ctx.lineCap = "round";
       ctx.beginPath();
-      const y = eye.y + this.blinkValue * 2;
-      ctx.moveTo(eye.x - e.width * 0.36, y);
-      ctx.quadraticCurveTo(eye.x, y + e.patchHeight * 0.08, eye.x + e.width * 0.36, y);
+      const y = eye.y - e.patchHeight * 0.24 + this.blinkValue;
+      ctx.moveTo(eye.x - e.width * 0.48, y);
+      ctx.quadraticCurveTo(eye.x, y + e.patchHeight * 0.025, eye.x + e.width * 0.48, y);
       ctx.stroke();
       ctx.restore();
     }
