@@ -2,8 +2,6 @@
 
 ## P0: 手元実機確認
 
-- `pnpm run dev` で Control Window と Avatar Window が開くことを確認する。
-- PNG/JPG/JPEG を読み込み、口パッチ、目パッチ、画像位置を実画像に合わせて調整する。
 - macOS のマイク権限ダイアログ後に `マイクON` が動くことを確認する。
 - OBS Studio の Window Capture で `Kaosan Live Avatar` を選択し、Virtual Camera 経由でZoomに出ることを確認する。
 
@@ -20,7 +18,6 @@
 
 ## P3: 運用改善
 
-- Electron Builder で macOS 用アプリ化する。
 - 設定JSONのスキーマ検証を入れる。
 - 起動時に前回の Avatar Window 状態を復元する。
 - OBS連携手順を画像付きでREADMEに追加する。
@@ -33,3 +30,8 @@
 - Control Window のプレビューをAvatar出力と同じ16:9に固定した。
 - Control Window を基本・詳細タブに整理し、主要操作を1画面に集約した。
 - OBS手順や調整項目の説明をヘルプモーダルへ移した。
+- Electron BuilderでApple Silicon向けDMG/ZIPを生成できるようにした。
+- モデル画像、アプリアイコン、マイク利用文言をアプリへ同梱した。
+- 配布版のControl WindowとAvatar Windowを開発サーバーなしで起動確認した。
+- Avatar Windowのコンテンツ領域を正確に1280x720へ固定した。
+- アドホック署名、DMGマウント、アプリ内資産、arm64実行形式を検証した。

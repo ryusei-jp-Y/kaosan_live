@@ -268,9 +268,10 @@ function wireUi() {
     changed("画像を読み込みました");
   });
   document.querySelector("#reset-my-model")?.addEventListener("click", () => {
+    const imagePath = settings.image.path;
     const output = { ...settings.output };
     const deviceId = selectedDeviceId;
-    settings = mergeSettings({ ...myModelDefaults, output });
+    settings = mergeSettings({ ...myModelDefaults, image: { ...myModelDefaults.image, path: imagePath }, output });
     selectedDeviceId = deviceId;
     publishSettings(settings);
     app.innerHTML = template();

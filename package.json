@@ -1,8 +1,10 @@
 {
   "name": "kaosan_live",
+  "productName": "Kaosan Live",
   "version": "0.1.0",
   "private": true,
   "description": "Line-art avatar lip-sync desktop app for OBS Virtual Camera workflows.",
+  "author": "Kaosan Live",
   "main": "electron/main.cjs",
   "packageManager": "pnpm@11.12.0",
   "engines": {
@@ -23,17 +25,68 @@
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build",
     "check": "pnpm run typecheck && pnpm run build && pnpm run syntaxcheck",
+    "dist:mac": "pnpm run check && electron-builder --mac dmg zip --arm64",
+    "pack:mac": "pnpm run check && electron-builder --mac dir --arm64",
     "start": "electron .",
     "syntaxcheck": "node --check electron/main.cjs && node --check electron/preload.cjs",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "electron": "^40.0.0"
-  },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "electron": "^40.0.0",
+    "electron-builder": "^26.15.3",
     "typescript": "^5.5.4",
     "vite": "^6.4.3",
     "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "jp.yamanari.kaosan-live",
+    "productName": "Kaosan Live",
+    "artifactName": "Kaosan-Live-${version}-${arch}.${ext}",
+    "asar": true,
+    "afterPack": "scripts/after-pack.cjs",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "private-assets/model.jpeg",
+        "to": "model.jpeg"
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.entertainment",
+      "icon": "private-assets/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "声に合わせてアバターの口を動かすため、マイクを使用します。"
+      }
+    },
+    "dmg": {
+      "title": "Kaosan Live ${version}",
+      "contents": [
+        {
+          "x": 140,
+          "y": 220
+        },
+        {
+          "x": 420,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
   }
 }

@@ -24,12 +24,16 @@ function settingsPath() {
   return path.join(app.getPath("userData"), "settings.json");
 }
 
+function defaultModelPath() {
+  return isDev ? path.join(__dirname, "..", "private-assets", "model.jpeg") : path.join(process.resourcesPath, "model.jpeg");
+}
+
 function defaultSettings() {
   return {
     app: { version: "0.1.0" },
     canvas: { width: 1280, height: 720, fps: 60, backgroundColor: "#ffffff" },
     image: {
-      path: "",
+      path: defaultModelPath(),
       x: 640,
       y: 360,
       scale: 1,
@@ -130,11 +134,11 @@ function applyAvatarWindowSettings(win, settings) {
   win.setBackgroundColor(next.canvas.backgroundColor);
   if (!fullscreen) {
     if (win.isFullScreen()) win.setFullScreen(false);
-    const [currentWidth, currentHeight] = win.getSize();
-    if (currentWidth !== width || currentHeight !== height) win.setSize(width, height);
+    const [currentWidth, currentHeight] = win.getContentSize();
+    if (currentWidth !== width || currentHeight !== height) win.setContentSize(width, height);
   } else {
-    const [currentWidth, currentHeight] = win.getSize();
-    if (currentWidth !== width || currentHeight !== height) win.setSize(width, height);
+    const [currentWidth, currentHeight] = win.getContentSize();
+    if (currentWidth !== width || currentHeight !== height) win.setContentSize(width, height);
     if (!win.isFullScreen()) win.setFullScreen(true);
   }
 }
@@ -192,6 +196,7 @@ function createAvatarWindow(settings = readSettings()) {
     title: "Kaosan Live Avatar",
     width: merged.canvas.width,
     height: merged.canvas.height,
+    useContentSize: true,
     backgroundColor: merged.canvas.backgroundColor,
     alwaysOnTop: merged.output.alwaysOnTop,
     fullscreen: merged.output.fullscreen,

@@ -228,6 +228,14 @@ kaosan_live/
 
 ## 使い方
 
+### インストール版
+
+配布された `Kaosan-Live-0.1.0-arm64.dmg` を開き、`Kaosan Live` を `Applications` へドラッグします。
+
+Developer IDによる公開用署名・公証を行わないプライベート配布版のため、初回はFinderでアプリを右クリックして `開く` を選択してください。詳しくは `PRIVATE_DISTRIBUTION.md` を参照してください。
+
+### 開発版
+
 ```sh
 pnpm install
 pnpm run dev
@@ -255,6 +263,21 @@ pnpm run dev
 pnpm run check
 pnpm audit --audit-level moderate
 ```
+
+### Apple Silicon向け配布物の作成
+
+限定配布用のモデル画像とアイコンはGitに含めません。ローカルの `private-assets/` に次のファイルを配置してから作成します。
+
+```text
+private-assets/model.jpeg
+private-assets/icon.icns
+```
+
+```sh
+pnpm run dist:mac
+```
+
+DMGとZIPは `release/` に生成されます。
 
 ### 開発進捗
 
